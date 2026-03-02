@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TZ Puzzle</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #ffc0f1;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* START */
+  #start-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .top-bar { display: flex; gap: 10px; align-items: center; }
+
+  .diff-btn {
+    background: rgba(255,255,255,0.22);
+    border: 2px solid rgba(255,255,255,0.55);
+    border-radius: 22px;
+    color: white;
+    padding: 7px 22px;
+    font-size: 0.88rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .diff-btn.active, .diff-btn:hover { background: white; color: #b72c99; border-color: white; }
+
+  .upload-btn {
+    background: rgba(255,255,255,0.15);
+    border: 2px solid rgba(255,255,255,0.4);
+    border-radius: 22px;
+    color: white;
+    padding: 7px 22px;
+    font-size: 0.88rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .upload-btn:hover { background: rgba(255,255,255,0.28); }
+
+  #preview-board {
+    background: white;
+    padding: 10px;
+    border-radius: 6px;
+    box-shadow: 4px 6px 20px rgba(0,0,0,0.35);
+    position: relative;
+    line-height: 0;
+  }
+
+  .play-btn {
+    background: linear-gradient(180deg, #f6b4e7 0%, #f392dd 45%, #f594e0 72%, #f6b4e7 100%);
+    border: 3px solid #bd62a9;
+    border-radius: 32px;
+    color: white;
+    font-size: 1.45rem;
+    font-weight: bold;
+    padding: 13px 68px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.35);
+    box-shadow: 0 4px 18px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.45);
+    transition: transform 0.1s;
+  }
+  .play-btn:hover { transform: translateY(-2px); }
+  .play-btn:active { transform: translateY(1px); }
+
+  /* GAME */
+  #game-screen { display: none; width: 100vw; height: 100vh; position: relative; overflow: hidden; }
+
+  #board-wrap {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 8px;
+    border-radius: 6px;
+    box-shadow: 4px 6px 32px rgba(0,0,0,0.4);
+    line-height: 0;
+  }
+
+  #board-canvas { display: block; }
+
+  #hud {
+    position: absolute;
+    top: 138px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 20px;
+    background: rgba(0,0,0,0.28);
+    backdrop-filter: blur(6px);
+    border-radius: 30px;
+    padding: 8px 24px;
+    color: white;
+    align-items: center;
+    white-space: nowrap;
+    z-index: 50;
+  }
+  .hv { font-size: 1.1rem; font-weight: bold; text-align: center; }
+  .hl { font-size: 0.6rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 2px; text-align: center; }
+  .hdiv { width: 1px; height: 28px; background: rgba(255,255,255,0.25); }
+
+  #back-btn {
+    position: absolute; top: 14px; left: 14px;
+    background: rgba(255,255,255,0.2);
+    border: 2px solid rgba(255,255,255,0.4);
+    border-radius: 20px;
+    color: white; padding: 7px 18px;
+    font-size: 0.8rem; cursor: pointer; font-weight: bold;
+    transition: all 0.15s;
+    z-index: 100;
+  }
+  #back-btn:hover { background: rgba(255,255,255,0.35); }
+
+  .jp {
+    position: absolute;
+    cursor: grab;
+    box-shadow: 2px 4px 14px rgba(0,0,0,0.4);
+    border: 1.5px solid rgba(255,255,255,0.7);
+    outline: 1px solid rgba(0,0,0,0.15);
+    transition: box-shadow 0.1s;
+  }
+  .jp:hover  { box-shadow: 4px 8px 22px rgba(0,0,0,0.55); }
+  .jp.drag   { cursor: grabbing; box-shadow: 6px 14px 30px rgba(0,0,0,0.6); }
+
+  /* LOGO start */
+  .start-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .start-logo .logo-img { height: 120px; max-width: 400px; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3)); }
+
+  /* LOGO  */
+  #game-logo {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    pointer-events: none;
+  }
+  #game-logo .logo-img {
+    height: 120px;
+    max-width: 400px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));
+  }
+
+  /* HINT THUMBNAIL */
+  #hint-box {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 200;
+    cursor: pointer;
+  }
+  #hint-canvas {
+    display: block;
+    border-radius: 8px;
+    border: 3px solid white;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+    transition: transform 0.2s, box-shadow 0.2s;
+    width: 160px;
+    height: 107px;
+  }
+  #hint-box:hover #hint-canvas {
+    transform: scale(1.06);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.6);
+  }
+  #hint-label {
+    text-align: center;
+    color: white;
+    font-size: 0.6rem;
+    font-weight: bold;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 5px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    opacity: 0.85;
+  }
+
+  /* WIN */
+  #win-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55); backdrop-filter: blur(8px);
+    z-index: 99999; align-items: center; justify-content: center;
+  }
+  #win-overlay.show { display: flex; }
+  .win-box { background: white; border-radius: 18px; padding: 44px 60px; text-align: center; box-shadow: 0 10px 50px rgba(0,0,0,0.5); }
+  .win-title { font-size: 2.3rem; font-weight: bold; color: #b72c99; margin-bottom: 6px; }
+  .win-sub { color: #888; margin-bottom: 24px; }
+  .win-stats { display: flex; gap: 44px; justify-content: center; margin-bottom: 28px; }
+  .wv { font-size: 1.9rem; font-weight: bold; color: #b72c99; }
+  .wl { font-size: 0.65rem; color: #aaa; text-transform: uppercase; letter-spacing: 2px; }
+
+  .confetti { position: fixed; pointer-events: none; border-radius: 2px; animation: cfall linear forwards; }
+  @keyframes cfall { to { transform: translateY(110vh) rotate(540deg); opacity: 0; } }
+
+  #file-input { display: none; }
+</style>
+</head>
+<body>
+
+<!-- START SCREEN -->
+<div id="start-screen">
+  <div class="start-logo">
+    <img class="logo-img" src="تصميم بدون عنوان (20).png" alt="Logo">
+  </div>
+
+  <div class="top-bar">
+    <button class="diff-btn active" onclick="setDiff(this,4,3)">Easy</button>
+    <button class="diff-btn" onclick="setDiff(this,6,4)">Medium</button>
+    <button class="diff-btn" onclick="setDiff(this,9,6)">Hard</button>
+    <button class="upload-btn" onclick="document.getElementById('file-input').click()">Upload</button>
+    <input type="file" id="file-input" accept="image/*" onchange="handleUpload(event)">
+  </div>
+
+  <div id="preview-board">
+    <canvas id="preview-canvas" width="720" height="480"></canvas>
+    <canvas id="overlay-canvas" width="720" height="480"
+      style="position:absolute;top:10px;left:10px;pointer-events:none"></canvas>
+  </div>
+
+  <button class="play-btn" onclick="startGame()">play</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen">
+  <div id="board-wrap">
+    <canvas id="board-canvas"></canvas>
+  </div>
+
+  <div id="game-logo">
+    <img class="logo-img" src="تصميم بدون عنوان (20).png" alt="Logo">
+  </div>
+
+  <div id="hud">
+    <div><div class="hv" id="hud-time">00:00</div><div class="hl">Time</div></div>
+    <div class="hdiv"></div>
+    <div><div class="hv" id="hud-moves">0</div><div class="hl">Moves</div></div>
+    <div class="hdiv"></div>
+    <div><div class="hv" id="hud-left">0</div><div class="hl">Remaining</div></div>
+  </div>
+
+  <div id="hint-box" title="Click to toggle hint">
+    <canvas id="hint-canvas" width="320" height="213"></canvas>
+    <div id="hint-label">🔍 Hint</div>
+  </div>
+
+  <button id="back-btn" onclick="goBack()">← Menu</button>
+</div>
+
+<!-- WIN -->
+<div id="win-overlay">
+  <div class="win-box">
+    <div class="win-title">🎉 Complete!</div>
+    <div class="win-sub">You assembled the puzzle!</div>
+    <div class="win-stats">
+      <div><div class="wv" id="win-time">—</div><div class="wl">Time</div></div>
+      <div><div class="wv" id="win-moves">—</div><div class="wl">Moves</div></div>
+    </div>
+    <button class="play-btn" onclick="goBack()">Play Again</button>
+  </div>
+</div>
+
+<script>
+const BW = 720, BH = 480;
+const SNAP = 0.4;
+const PAD = 8;
+
+let COLS = 4, ROWS = 3;
+let gameImg = null;
+let pieces = [];
+let dragging = null, dox = 0, doy = 0;
+let moves = 0, placed = 0;
+let timer = null, t0 = null;
+
+function setDiff(btn, cols, rows) {
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  COLS = cols; ROWS = rows;
+  drawOverlay();
+}
+
+function drawOverlay() {
+  const oc = document.getElementById('overlay-canvas');
+  const ctx = oc.getContext('2d');
+  ctx.clearRect(0, 0, BW, BH);
+  const pw = BW / COLS, ph = BH / ROWS;
+  ctx.strokeStyle = 'rgba(50,110,190,0.65)';
+  ctx.lineWidth = 1.5;
+  for (let r = 1; r < ROWS; r++) {
+    ctx.beginPath(); ctx.moveTo(0, r*ph); ctx.lineTo(BW, r*ph); ctx.stroke();
+  }
+  for (let c = 1; c < COLS; c++) {
+    ctx.beginPath(); ctx.moveTo(c*pw, 0); ctx.lineTo(c*pw, BH); ctx.stroke();
+  }
+}
+
+function handleUpload(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const fr = new FileReader();
+  fr.onload = ev => {
+    const img = new Image();
+    img.onload = () => { gameImg = img; renderPreview(); };
+    img.src = ev.target.result;
+  };
+  fr.readAsDataURL(f);
+}
+
+function renderPreview() {
+  const pc = document.getElementById('preview-canvas');
+  const ctx = pc.getContext('2d');
+  ctx.clearRect(0, 0, BW, BH);
+  ctx.drawImage(gameImg, 0, 0, BW, BH);
+}
+
+
+function redrawBoard() {
+  const bc = document.getElementById('board-canvas');
+  const ctx = bc.getContext('2d');
+  const pw = BW / COLS, ph = BH / ROWS;
+  ctx.clearRect(0, 0, BW, BH);
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, BW, BH);
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1;
+  for (let r = 0; r <= ROWS; r++) {
+    ctx.beginPath(); ctx.moveTo(0, r*ph); ctx.lineTo(BW, r*ph); ctx.stroke();
+  }
+  for (let c = 0; c <= COLS; c++) {
+    ctx.beginPath(); ctx.moveTo(c*pw, 0); ctx.lineTo(c*pw, BH); ctx.stroke();
+  }
+  pieces.forEach(p => {
+    if (p.placed) return;
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    ctx.fillRect(p.c * pw + 1, p.r * ph + 1, pw - 2, ph - 2);
+  });
+  pieces.forEach(p => {
+    if (!p.placed) return;
+    const sx = p.c * (gameImg.width  / COLS);
+    const sy = p.r * (gameImg.height / ROWS);
+    const sw = gameImg.width  / COLS;
+    const sh = gameImg.height / ROWS;
+    const dx = p.c * pw, dy = p.r * ph;
+    ctx.drawImage(gameImg, sx, sy, sw, sh, dx, dy, pw, ph);
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(dx, dy, pw, ph);
+  });
+}
+
+let hintVisible = true;
+function drawHint() {
+  const hc = document.getElementById('hint-canvas');
+  const ctx = hc.getContext('2d');
+  ctx.clearRect(0, 0, hc.width, hc.height);
+  ctx.drawImage(gameImg, 0, 0, hc.width, hc.height);
+  const pw = hc.width / COLS, ph = hc.height / ROWS;
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.lineWidth = 1;
+  for (let r = 1; r < ROWS; r++) {
+    ctx.beginPath(); ctx.moveTo(0, r*ph); ctx.lineTo(hc.width, r*ph); ctx.stroke();
+  }
+  for (let c = 1; c < COLS; c++) {
+    ctx.beginPath(); ctx.moveTo(c*pw, 0); ctx.lineTo(c*pw, hc.height); ctx.stroke();
+  }
+}
+
+document.getElementById('hint-box').addEventListener('click', () => {
+  hintVisible = !hintVisible;
+  const hc = document.getElementById('hint-canvas');
+  hc.style.opacity = hintVisible ? '1' : '0.25';
+  document.getElementById('hint-label').textContent = hintVisible ? ' Hint' : 'Hidden';
+});
+
+function startGame() {
+  if (!gameImg) return;
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'block';
+
+  const bc = document.getElementById('board-canvas');
+  bc.width = BW; bc.height = BH;
+
+  document.querySelectorAll('.jp').forEach(p => p.remove());
+  pieces = [];
+
+  const pw = BW / COLS, ph = BH / ROWS;
+  const gameScreen = document.getElementById('game-screen');
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const el = document.createElement('canvas');
+      el.width  = Math.round(pw);
+      el.height = Math.round(ph);
+      const ctx = el.getContext('2d');
+      ctx.drawImage(gameImg,
+        c * (gameImg.width  / COLS), r * (gameImg.height / ROWS),
+        gameImg.width  / COLS,       gameImg.height / ROWS,
+        0, 0, pw, ph);
+      el.classList.add('jp');
+      const piece = { el, r, c, pw, ph, placed: false };
+      el.addEventListener('mousedown', e => startDrag(e, piece));
+      el.addEventListener('touchstart', e => startDragTouch(e, piece), { passive: false });
+      gameScreen.appendChild(el);
+      pieces.push(piece);
+    }
+  }
+
+  redrawBoard();
+  drawHint();
+  hintVisible = true;
+  document.getElementById('hint-canvas').style.opacity = '1';
+  document.getElementById('hint-label').textContent = '🔍 Hint';
+  scatter();
+  resetStats();
+}
+
+function scatter() {
+  const W = window.innerWidth, H = window.innerHeight;
+  const bw = document.getElementById('board-wrap').getBoundingClientRect();
+  pieces.forEach((p, i) => {
+    if (p.placed) return;
+    let x, y, tries = 0;
+    do {
+      x = Math.random() * (W - p.pw);
+      y = Math.random() * (H - p.ph);
+      tries++;
+      const inX = x + p.pw > bw.left - 20 && x < bw.right  + 20;
+      const inY = y + p.ph > bw.top  - 20 && y < bw.bottom + 20;
+      if (!(inX && inY)) break;
+    } while (tries < 30);
+    p.el.style.left = x + 'px';
+    p.el.style.top  = y + 'px';
+    p.el.style.zIndex = 20 + i;
+  });
+}
+
+function startDrag(e, p) {
+  if (p.placed) return;
+  e.preventDefault();
+  dox = e.clientX - parseInt(p.el.style.left);
+  doy = e.clientY - parseInt(p.el.style.top);
+  dragging = p;
+  p.el.classList.add('drag');
+  p.el.style.zIndex = 9999;
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+function startDragTouch(e, p) {
+  if (p.placed) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  dox = t.clientX - parseInt(p.el.style.left);
+  doy = t.clientY - parseInt(p.el.style.top);
+  dragging = p;
+  p.el.style.zIndex = 9999;
+  document.addEventListener('touchmove', onTMove, { passive: false });
+  document.addEventListener('touchend', onTUp);
+}
+
+function onMove(e) { if (!dragging) return; dragging.el.style.left=(e.clientX-dox)+'px'; dragging.el.style.top=(e.clientY-doy)+'px'; }
+function onTMove(e) { e.preventDefault(); if(!dragging) return; const t=e.touches[0]; dragging.el.style.left=(t.clientX-dox)+'px'; dragging.el.style.top=(t.clientY-doy)+'px'; }
+function onUp()  { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp);   drop(); }
+function onTUp() { document.removeEventListener('touchmove', onTMove); document.removeEventListener('touchend', onTUp); drop(); }
+
+function drop() {
+  if (!dragging) return;
+  const p = dragging; dragging = null;
+  p.el.classList.remove('drag');
+  moves++;
+  document.getElementById('hud-moves').textContent = moves;
+
+  const bwEl = document.getElementById('board-wrap');
+  const bwr  = bwEl.getBoundingClientRect();
+  const boardLeft = bwr.left + PAD;
+  const boardTop  = bwr.top  + PAD;
+  const targetX = boardLeft + p.c * p.pw;
+  const targetY = boardTop  + p.r * p.ph;
+  const cx = parseInt(p.el.style.left);
+  const cy = parseInt(p.el.style.top);
+  const snap = Math.min(p.pw, p.ph) * SNAP;
+
+  if (Math.abs(cx - targetX) < snap && Math.abs(cy - targetY) < snap) {
+    p.placed = true;
+    p.el.remove();
+    placed++;
+    redrawBoard();
+    document.getElementById('hud-left').textContent = COLS * ROWS - placed;
+    if (placed === COLS * ROWS) setTimeout(showWin, 500);
+  }
+}
+
+function resetStats() {
+  moves = 0; placed = 0;
+  document.getElementById('hud-moves').textContent = '0';
+  document.getElementById('hud-left').textContent  = COLS * ROWS;
+  if (timer) clearInterval(timer);
+  t0 = Date.now();
+  timer = setInterval(() => {
+    const s = Math.floor((Date.now() - t0) / 1000);
+    document.getElementById('hud-time').textContent =
+      String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+  }, 1000);
+}
+
+function showWin() {
+  clearInterval(timer);
+  document.getElementById('win-time').textContent  = document.getElementById('hud-time').textContent;
+  document.getElementById('win-moves').textContent = moves;
+  document.getElementById('win-overlay').classList.add('show');
+  const cols = ['#e91e8c','#f06292','#ff9800','#9c27b0','#fff','#ff5722'];
+  for (let i = 0; i < 90; i++) {
+    const el = document.createElement('div');
+    el.classList.add('confetti');
+    el.style.cssText = `left:${Math.random()*100}vw;top:-20px;width:${6+Math.random()*9}px;height:${6+Math.random()*9}px;background:${cols[i%cols.length]};animation-duration:${1.4+Math.random()*2}s;animation-delay:${Math.random()*1.5}s;`;
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
+}
+
+function goBack() {
+  clearInterval(timer);
+  document.getElementById('win-overlay').classList.remove('show');
+  document.getElementById('game-screen').style.display = 'none';
+  document.getElementById('start-screen').style.display = 'flex';
+  document.querySelectorAll('.jp').forEach(p => p.remove());
+  pieces = [];
+}
+
+loadDefaultImg();
+setTimeout(drawOverlay, 80);
+</script>
+</body>
+</html>
