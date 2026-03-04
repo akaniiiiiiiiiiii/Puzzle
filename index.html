@@ -7,7 +7,7 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    background: #ffc0f1;
+    background: #E89EB8;
     min-height: 100vh;
     font-family: Arial, sans-serif;
     display: flex;
@@ -265,7 +265,7 @@
 
   <div id="hint-box" title="Click to toggle hint">
     <canvas id="hint-canvas" width="320" height="213"></canvas>
-    <div id="hint-label">🔍 Hint</div>
+    <div id="hint-label"> Hint</div>
   </div>
 
   <button id="back-btn" onclick="goBack()">← Menu</button>
@@ -274,7 +274,7 @@
 <!-- WIN -->
 <div id="win-overlay">
   <div class="win-box">
-    <div class="win-title">🎉 Complete!</div>
+    <div class="win-title"> Complete!</div>
     <div class="win-sub">You assembled the puzzle!</div>
     <div class="win-stats">
       <div><div class="wv" id="win-time">—</div><div class="wl">Time</div></div>
@@ -432,7 +432,7 @@ function startGame() {
   drawHint();
   hintVisible = true;
   document.getElementById('hint-canvas').style.opacity = '1';
-  document.getElementById('hint-label').textContent = '🔍 Hint';
+  document.getElementById('hint-label').textContent = ' Hint';
   scatter();
   resetStats();
 }
